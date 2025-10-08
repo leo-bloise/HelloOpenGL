@@ -8,6 +8,12 @@ const char* vertexShaderSource = "#version 330 core\n"
 	"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 	"}\0";
 
+const char* fragmentShaderSource = "#version 330 core\n"
+	"out vec4 FragColor;\n"
+	"void main() {\n"
+	"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+	"}\0";
+
 bool checkCompilationShaderSuccess(unsigned int shaderId) {
 	int success;
 
@@ -23,6 +29,20 @@ bool checkCompilationShaderSuccess(unsigned int shaderId) {
 	return true;
 }
 
+unsigned int createFragmentShader() {
+	unsigned int fragmentShader;
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glCompileShader(fragmentShader);
+
+	if (!checkCompilationShaderSuccess(fragmentShader)) {
+		return 0;
+	}
+
+	return fragmentShader;
+}
+
 unsigned int createVertexShader() {
 	unsigned int vertexShader;
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -35,6 +55,28 @@ unsigned int createVertexShader() {
 	}
 
 	return vertexShader;
+}
+
+unsigned int createShaderProgram(unsigned int vertexShader, unsigned int fragmentShader) {
+	unsigned int shaderProgram;
+	shaderProgram = glCreateProgram();
+
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+
+	int success;
+
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
+	if (!success) {
+		char info[512];
+		glGetProgramInfoLog(shaderProgram, 512, NULL, info);
+		std::cerr << "ERROR LINKING SHADER PROGRAM: " << info;
+		return 0;
+	}
+
+	return shaderProgram;
 }
 
 GLFWwindow* configureAsCurrentAndCreateWindow() {
@@ -70,17 +112,14 @@ GLFWwindow* configureAsCurrentAndCreateWindow() {
 	return window;
 }
 
-void drawTriangle() {
-	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f
-	};
+unsigned int declareVbo(float* vertices, unsigned int VBO_ID) {
+	if (VBO_ID != 0) {
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, vertices, GL_STATIC_DRAW);
+		return VBO_ID;
+	}
 
-	unsigned int VBO;
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glGenBuffers(1, &VBO_ID);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_ID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, vertices, GL_STATIC_DRAW);
 }
 
@@ -90,16 +129,57 @@ int main() {
 	if (window == NULL) {
 		return -1;
 	}
-
+	// DETERMING AND BINDING SHADER PROGRAM..
 	unsigned int vertexShader = createVertexShader();
 
 	if (vertexShader == 0) {
 		return -1;
 	}
 
+	unsigned int fragmentShader = createFragmentShader();
+
+	if (fragmentShader == 0) {
+		return -1;
+	}
+
+	unsigned int shaderProgram = createShaderProgram(vertexShader, fragmentShader);
+	
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	glUseProgram(shaderProgram);
+	// DETERMING AND BINDING SHADER PROGRAM..
+
+	int retries = 0;
+	unsigned int VAO;
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	float vertices[] = {
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		0.0f, 0.5f, 0.0f
+	};
+
+	unsigned int VBO_ID = declareVbo(vertices, 0);
+
+	glVertexAttribPointer( // It determines how to read a buffer data in opengl, so one vertex buffer object must be attached to it.
+		0, // Attribute position in the shader
+		3, // How many items one vertex has 
+		GL_FLOAT, // What is the type of it?
+		GL_FALSE, // Normalize values to -1, 0 or 1. (In this case, they're already normalized)
+		3 * sizeof(float), // How many bytes one vertex occupies (It determines the jump to the next vertex).
+		(void*)0 // From where inside the vertex buffer object open gl must start reading
+	);
+
+	glEnableVertexAttribArray(0);
+
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -107,4 +187,4 @@ int main() {
 
 	glfwTerminate();
 	return 0;
-}
+};
