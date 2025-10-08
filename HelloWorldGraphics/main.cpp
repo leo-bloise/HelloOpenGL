@@ -38,6 +38,40 @@ unsigned int bindVertexArray() {
 	return VAO;
 }
 
+unsigned int* defineTriangles(float* vertices, size_t size) {
+	unsigned int firstVAO = bindVertexArray();
+
+	unsigned int firstVBO;
+
+	glGenBuffers(1, &firstVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, firstVBO);
+	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+
+	glEnableVertexAttribArray(0);
+
+	unsigned int secondVAO = bindVertexArray();
+
+	unsigned int secondVBO;
+
+	glGenBuffers(1, &secondVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, secondVBO);
+	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+
+	unsigned int* vaos = new unsigned int[2];
+	vaos[0] = firstVAO;
+	vaos[1] = secondVAO;
+
+	return vaos;
+}
+
 unsigned int createFragmentShader() {
 	unsigned int fragmentShader;
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -148,45 +182,36 @@ int main() {
 	glUseProgram(shaderProgram);
 	// DETERMING AND BINDING SHADER PROGRAM..
 
-	bindVertexArray();
-
 	float vertices[] = {
-		1.0f, 0.5f, 0.0f,
-		1.0f, -0.5f, 0.0f,
-		0.1f, -0.5f, 0.0f,
-
-		-0.8f, 0.8f, 0.0f,
-		-0.8f, -0.8f, 0.0f,
-		0.0f, 0.0f, 0.0f
+		0.5f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f,
 	};
 
-	unsigned int VBO;
+	unsigned int* VAOS = defineTriangles(vertices, sizeof(float) * 9);
 
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(
-		0,
-		3,
-		GL_FLOAT,
-		GL_FALSE,
-		sizeof(float) * 3,
-		(void*)0
-	);
-
-	glEnableVertexAttribArray(0);
+	int renderLoops = 0;
 
 	while (!glfwWindowShouldClose(window)) {
+		if (renderLoops++ % 2 == 0) {
+			std::cout << "Using VAO 0" << std::endl;
+			glBindVertexArray(VAOS[0]);
+		} else {
+			std::cout << "Using VAO 1" << std::endl;
+			glBindVertexArray(VAOS[1]);
+		}
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
 	glfwTerminate();
+	
+	delete[] VAOS;
+
 	return 0;
 };
