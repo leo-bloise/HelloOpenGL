@@ -29,6 +29,15 @@ bool checkCompilationShaderSuccess(unsigned int shaderId) {
 	return true;
 }
 
+unsigned int bindVertexArray() {
+	unsigned int VAO;
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	return VAO;
+}
+
 unsigned int createFragmentShader() {
 	unsigned int fragmentShader;
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -139,43 +148,31 @@ int main() {
 	glUseProgram(shaderProgram);
 	// DETERMING AND BINDING SHADER PROGRAM..
 
-	int retries = 0;
-	unsigned int VAO;
-
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	bindVertexArray();
 
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f,-0.5f,0.0f,
-		-0.5f, 0.5f, 0.0f
+		1.0f, 0.5f, 0.0f,
+		1.0f, -0.5f, 0.0f,
+		0.1f, -0.5f, 0.0f,
+
+		-0.8f, 0.8f, 0.0f,
+		-0.8f, -0.8f, 0.0f,
+		0.0f, 0.0f, 0.0f
 	};
 
-	unsigned int indices[] = {
-		0, 1, 3,
-		1, 2, 3
-	};
-
-	unsigned int EBO;
 	unsigned int VBO;
-	
-	glGenBuffers(1, &EBO);
+
 	glGenBuffers(1, &VBO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * 6, indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer( // It determines how to read a buffer data in opengl, so one vertex buffer object must be attached to it.
-		0, // Attribute position in the shader
-		3, // How many items one vertex has 
-		GL_FLOAT, // What is the type of it?
-		GL_FALSE, // Normalize values to -1, 0 or 1. (In this case, they're already normalized)
-		3 * sizeof(float), // How many bytes one vertex occupies (It determines the jump to the next vertex).
-		(void*)0 // From where inside the vertex buffer object open gl must start reading
+	glVertexAttribPointer(
+		0,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		sizeof(float) * 3,
+		(void*)0
 	);
 
 	glEnableVertexAttribArray(0);
@@ -184,7 +181,7 @@ int main() {
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
