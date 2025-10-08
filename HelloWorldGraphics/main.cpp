@@ -1,5 +1,6 @@
-#include <iostream>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 GLFWwindow* configureAsCurrentAndCreateWindow() {
 	if (!glfwInit()) {
@@ -24,7 +25,23 @@ GLFWwindow* configureAsCurrentAndCreateWindow() {
 
 	glViewport(0, 0, 800, 800);
 
+	GLenum err = glewInit();
+
+	if (err != GLEW_OK) {
+		std::cerr << "Error while init glew: " << glewGetErrorString(err);
+		return NULL;
+	}
+
 	return window;
+}
+
+void drawTriangle() {
+	float vertices[] = {
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		0.0f, 0.5f, 0.0f
+	};
+
 }
 
 int main() {	
@@ -34,7 +51,6 @@ int main() {
 		return -1;
 	}
 
-	// Rendering loop
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
