@@ -112,17 +112,6 @@ GLFWwindow* configureAsCurrentAndCreateWindow() {
 	return window;
 }
 
-unsigned int declareVbo(float* vertices, unsigned int VBO_ID) {
-	if (VBO_ID != 0) {
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, vertices, GL_STATIC_DRAW);
-		return VBO_ID;
-	}
-
-	glGenBuffers(1, &VBO_ID);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_ID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, vertices, GL_STATIC_DRAW);
-}
-
 int main() {	
 	GLFWwindow* window = configureAsCurrentAndCreateWindow();
 
@@ -157,12 +146,28 @@ int main() {
 	glBindVertexArray(VAO);
 
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
+		0.5f, 0.5f, 0.0f,
 		0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f
+		-0.5f,-0.5f,0.0f,
+		-0.5f, 0.5f, 0.0f
 	};
 
-	unsigned int VBO_ID = declareVbo(vertices, 0);
+	unsigned int indices[] = {
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	unsigned int EBO;
+	unsigned int VBO;
+	
+	glGenBuffers(1, &EBO);
+	glGenBuffers(1, &VBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * 6, indices, GL_STATIC_DRAW);
 
 	glVertexAttribPointer( // It determines how to read a buffer data in opengl, so one vertex buffer object must be attached to it.
 		0, // Attribute position in the shader
@@ -179,7 +184,7 @@ int main() {
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
