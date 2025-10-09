@@ -4,14 +4,18 @@
 
 const char* vertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
+	"layout (location = 1) in vec3 aColor;\n"
+	"out vec3 ourColor;\n"
 	"void main() {\n"
 	"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+	"ourColor = aColor;\n"
 	"}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
+	"in vec3 ourColor;\n"
 	"out vec4 FragColor;\n"
 	"void main() {\n"
-	"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+	"FragColor = vec4(ourColor.r, ourColor.g, ourColor.b, 1.0f);\n"
 	"}\0";
 
 bool checkCompilationShaderSuccess(unsigned int shaderId) {
@@ -38,7 +42,7 @@ unsigned int bindVertexArray() {
 	return VAO;
 }
 
-unsigned int* defineTriangles(float* vertices, size_t size) {
+unsigned int defineTriangles(float* vertices, size_t size) {
 	unsigned int firstVAO = bindVertexArray();
 
 	unsigned int firstVBO;
@@ -47,29 +51,14 @@ unsigned int* defineTriangles(float* vertices, size_t size) {
 	glBindBuffer(GL_ARRAY_BUFFER, firstVBO);
 	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
-
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)0);
 	glEnableVertexAttribArray(0);
 
-	unsigned int secondVAO = bindVertexArray();
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
-	unsigned int secondVBO;
 
-	glGenBuffers(1, &secondVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, secondVBO);
-	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
-
-	glEnableVertexAttribArray(0);
-
-	glBindVertexArray(0);
-
-	unsigned int* vaos = new unsigned int[2];
-	vaos[0] = firstVAO;
-	vaos[1] = secondVAO;
-
-	return vaos;
+	return firstVBO;
 }
 
 unsigned int createFragmentShader() {
@@ -183,23 +172,18 @@ int main() {
 	// DETERMING AND BINDING SHADER PROGRAM..
 
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f,
+		0.5f, 0.5f, 0.0f,  1.0f, 0.0f, 0.0f,
+		0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f
 	};
 
-	unsigned int* VAOS = defineTriangles(vertices, sizeof(float) * 9);
+	unsigned int VAO = defineTriangles(vertices, sizeof(float) * 18);
+
+	glBindVertexArray(VAO);
 
 	int renderLoops = 0;
 
 	while (!glfwWindowShouldClose(window)) {
-		if (renderLoops++ % 2 == 0) {
-			std::cout << "Using VAO 0" << std::endl;
-			glBindVertexArray(VAOS[0]);
-		} else {
-			std::cout << "Using VAO 1" << std::endl;
-			glBindVertexArray(VAOS[1]);
-		}
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -210,8 +194,6 @@ int main() {
 	}
 
 	glfwTerminate();
-	
-	delete[] VAOS;
 
 	return 0;
 };
